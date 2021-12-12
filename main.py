@@ -6,167 +6,29 @@ import sys
 from logging.handlers import RotatingFileHandler
 from rich.console import Console
 import logging
+from dataclasses import dataclass
+from prettytable import PrettyTable
 
 console = Console()
 
+@dataclass
+class Color:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    W  = '\033[0m'  # white (normal)
+    R  = '\033[31m' # red
+    G  = '\033[32m' # green
+    O  = '\033[33m' # orange
+    B  = '\033[34m' # blue
+    P  = '\033[35m' # purple
 
-running = True
-active = False
-
-threads = []
-trackers = []
-defaultEmail = ""
-
-
-
-W  = '\033[0m'  # white (normal)
-R  = '\033[31m' # red
-G  = '\033[32m' # green
-O  = '\033[33m' # orange
-B  = '\033[34m' # blue
-P  = '\033[35m' # purple
-
-
-def check_working():
-    global running
-
-    while running:
-        if len(trackers) == 0 and active:
-            # email that no trackers are running anymore
-            try:
-                send_email.send("No trackers are running anymore! Your trackers might have failed! Exiting tracker...", defaultEmail, "No trackers are running anymore!")
-            except Exception as e:
-                print(e)
-
-            running = False
-            print("\nNo trackers are running anymore! Exiting tracker...")
-            sys.exit()
-        time.sleep(1)
-
-
-
-def add_tracker():
-
-    url = input("Enter the URL of the website you want to track: ")
-    try:
-        interval = int(input("Enter the interval in seconds between the checks: "))
-    except:
-        print("Invalid interval!")
-        return
-    email = input("Enter the email address you want to send the changemessages to(blank for default): ")
-    message = input("Enter the message you want to send: ")
-
-    if email == "":
-        email = defaultEmail
-
-    # takes parameters: url, interval, email, message
-    tracker = Tracker(url, interval, email, message, remove_cb)
-    
-    # run the tracker in a separate thread
-    t = Thread(target=tracker.run)
-    t.start()
-
-    # add the tracker to the list of trackers
-    trackers.append(tracker)
-
-    # add the thread to the list of threads
-    threads.append(t)
-
-    print(f"\nTracker for {url} started!")
-
-def remove_tracker():
-    url = input("Enter the URL of the website you want to stop tracking: ")
-    for tracker in trackers:
-        if tracker.url == url:
-            tracker.stop()
-            trackers.remove(tracker)
-            print(f"Tracker for {url} stopped!")
-            break
-    else:
-        print("\nThe website you entered is not being tracked.\n")
-
-def print_log():
-    try:
-        print("")
-        log = ""
-        with open("app.log.1", "r") as f:
-            log += f.read()
-        with open("app.log", "r") as f:
-            log += f.read()
-        console.log(log)
-    except FileNotFoundError:
-        print("No log file found!")
-
-def print_welcome():
-    print("")
-    print("===========================")
-    print("")
-    print(f"Welcome to the {B}URL Tracker{W}!")
-    print(f"This program will {B}track the changes{W} of a website and send you an email when the changes are detected.")
-    print("")
-    print("===========================")
-
-def print_help():
-    print("")
-    print(f"To {R}start{W} tracking a website, enter {G}'add'{W}.")
-    print(f"To {R}stop{W} tracking a website, enter {G}'remove'{W}.")
-    print(f"To {R}exit{W} the program, enter {G}'exit'{W}.")
-    print(f"To see a list of all tracked websites, enter {G}'list'{W}.")
-    print(f"To see the log, enter {G}'log'{W}.")
-    print(f"To see this help again, enter {G}'help'{W}.")
-
-def remove_cb(url):
-    global active
-
-    active = True
-
-
-    for tracker in trackers:
-        if tracker.url == url:
-            trackers.remove(tracker)
-
-
-
-def main():
-    global defaultEmail
-
-    print_welcome()
-    defaultEmail = input("Enter the default email address you want to send the changemessages to: ")
-    print("")
-    print_help()
-
-    is_working_tracker = Thread(target=check_working, daemon=True)
-    is_working_tracker.start()
-
-    while running:
-        command = input("\nEnter a command: ")
-
-        if command == "exit":
-            for tracker in trackers:
-                tracker.stop()
-            for thread in threads:
-                thread.join()
-            break
-
-        elif "add" in command:
-            add_tracker()
-
-        elif command == "list":
-            print("Currently tracking:\n")
-            for tracker in trackers:
-                print(tracker.url)
-
-        elif command == "help":
-            print_help()
-
-        elif "remove" in command:
-            remove_tracker()
-
-        elif "log" in command:
-            print_log()
-            
-        else:
-            print("Invalid command!")
+color = Color()
 
 def get_logger():
     logger = logging.getLogger('app')
@@ -175,13 +37,244 @@ def get_logger():
     handler.setFormatter(formater)
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
+class Main:
+    def __init__(self):
+        self.running = True
+        self.active = False
+        self.threads = []
+        self.trackers = []
+        self.defaultEmail = ""
+
+    def check_working(self):
+        global running
+
+        while self.running:
+            if len(self.trackers) == 0 and self.active:
+                # email that no trackers are running anymore
+                try:
+                    send_email.send("No trackers are running anymore! Your trackers might have failed! Exiting tracker...", self.defaultEmail, "No trackers are running anymore!")
+                except Exception as e:
+                    print(e)
+
+                self.running = False
+                print("\nNo trackers are running anymore! Exiting tracker...")
+                sys.exit()
+            time.sleep(1)
+
+    def add_tracker(self, url=None):
+        if url is None:
+            url = input("Enter the URL of the website you want to track: ")
+        try:
+            interval = int(input("Enter the interval in seconds between the checks: "))
+        except:
+            print("Invalid interval!")
+            return
+        email = input("Enter the email address you want to send the changemessages to(blank for default): ")
+        message = input("Enter the message you want to send: ")
+
+        if email == "":
+            email = self.defaultEmail
+
+        tracker = Tracker(url, interval, email, message, self.remove_cb)
+        
+        # run the tracker in a separate thread
+        t = Thread(target=tracker.run)
+        t.start()
+
+        # add the thread to the list of threads
+        self.threads.append(t)
+
+        print(f"\nTracker for {url} started!")
+
+        # add the tracker to the list of trackers and save in file
+        self.trackers.append(tracker)
+        with open("trackers.txt", "a") as f:
+            f.write(f"{url};{interval};{email};{message}\n")
+    
+    def remove_tracker(self):
+
+        print("")
+
+        if len(self.trackers) == 0:
+            print("No trackers are running!")
+            return
+
+        for i, tracker in enumerate(self.trackers):
+            print(f"{i} - {tracker.url}")
+
+        try:
+            index = int(input("\nEnter the index of the website you want to remove: "))
+        except:
+            print("\nInvalid index!")
+            return
+        
+        if index < 0 or index >= len(self.trackers):
+            print("\nInvalid index!")
+            return
+
+        tracker = self.trackers[index]
+        tracker.stop()
+        self.trackers.remove(tracker)
+
+        # writing the remaining trackers to the file
+        with open("trackers.txt", "w") as f:
+            for t in self.trackers:
+                f.write(f"{t.url};{t.interval};{t.email};{t.message}\n")
+
+        print(f"\nTracker for {tracker.url} stopped!")
+    
+    def print_log(self):
+        try:
+            print("")
+            log = ""
+            try:
+                with open("app.log.1", "r") as f:
+                    log += f.read()
+            except:
+                pass
+            with open("app.log", "r") as f:
+                log += f.read()
+            console.log(log)
+        except FileNotFoundError:
+            print("No log file found!")
+    
+    def print_welcome(self):
+        print("")
+        print("===========================")
+        print("")
+        print(f"Welcome to the {color.B}URL Tracker{color.W}!")
+        print(f"This program will {color.B}track the changes{color.W} of a website and send you an email when the changes are detected.")
+        print("")
+        print("===========================\n")
+    
+    def print_help(self):
+        print("")
+        print(f"To {color.R}start{color.W} tracking a website, enter {color.G}'add'{color.W}.")
+        print(f"To {color.R}stop{color.W} tracking a website, enter {color.G}'remove'{color.W}.")
+        print(f"To {color.R}exit{color.W} the program, enter {color.G}'exit'{color.W}.")
+        print(f"To see a list of all tracked websites, enter {color.G}'list'{color.W}.")
+        print(f"To see the log, enter {color.G}'log'{color.W}.")
+        print(f"To see this help again, enter {color.G}'help'{color.W}.")
+    
+    def remove_cb(self, url):
+        global active
+
+        active = True
+
+
+        for tracker in self.trackers:
+            if tracker.url == url:
+                self.trackers.remove(tracker)
+
+                # removing it from the file
+                with open("trackers.txt", "w") as f:
+                    for t in self.trackers:
+                        f.write(f"{t.url};{t.interval};{t.email};{t.message}\n")
+                break
+   
+    def import_trackers(self):
+        try:
+            urls = ""
+            with open("trackers.txt", "r") as f:
+                for line in f:
+                    line = line.strip()
+                    line = line.split(";")
+                    url = line[0]
+                    urls += url + "\n"
+                    interval = int(line[1])
+                    email = line[2]
+                    message = line[3]
+                    tracker = Tracker(url, interval, email, message, self.remove_cb)
+                    self.trackers.append(tracker)
+                    t = Thread(target=tracker.run)
+                    t.start()
+                    self.threads.append(t)
+            print(f"\nThe following websites have been importet are being tracked:\n\n{urls}")
+
+        except FileNotFoundError:
+            print(f"\n{color.WARNING}No trackers file found!{color.W}")
+    
+    def print_list(self):
+        # printing list of all trackers with prettytable
+
+        if len(self.trackers) == 0:
+            print("\nNo trackers are running!")
+            return
+
+        print("")
+        print("List of all trackers:")
+        print("")
+        table = PrettyTable(["URL", "Interval", "Email", "Message"])
+        for tracker in self.trackers:
+            table.add_row([tracker.url, tracker.interval, tracker.email, tracker.message])
+        print(table)
+
+    def run(self):
+        self.print_welcome()
+        self.defaultEmail = input("Enter the default email address you want to send the changemessages to: ")
+        print("")
+
+        # ask if they already tracked and want to import trackers from a file
+        while True:
+            choice = input("Do you want to import trackers from trackers.txt? (y/n): ")
+            if choice == "y":
+                self.import_trackers()
+                break
+            elif choice == "n":
+                break
+            else:
+                print("Invalid input!")
+
+
+        self.print_help()
+
+        is_working_tracker = Thread(target=self.check_working, daemon=True)
+        is_working_tracker.start()
+
+        while self.running:
+            print("\n-----------------------------------------------------")
+            command = input("\nEnter a command: ")
+
+            if command == "exit":
+                for tracker in self.trackers:
+                    tracker.stop()
+                for thread in self.threads:
+                    thread.join()
+                sys.exit()
+
+            elif "add" in command:
+                command = command.split(" ")
+                if len(command) == 1:
+                    self.add_tracker()
+                else:
+                    self.add_tracker(command[1])
+
+            elif command == "list":
+                self.print_list()
+
+            elif command == "help":
+                self.print_help()
+
+            elif "remove" in command:
+                self.remove_tracker()
+
+            elif "log" in command:
+                self.print_log()
+            
+            else:
+                print("\nInvalid command!")
+
 
 if __name__ == '__main__':
-
+    
     get_logger()
 
     try:
-        main()
+
+        tracker = Main()
+        tracker.run()
+
     except KeyboardInterrupt:
         print("")
         print("Exiting...")
+        sys.exit()
