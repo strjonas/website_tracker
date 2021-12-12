@@ -3,6 +3,12 @@ from tracker import Tracker
 import time
 import send_email
 import sys
+from logging.handlers import RotatingFileHandler
+from rich.console import Console
+import logging
+
+console = Console()
+
 
 running = True
 active = False
@@ -81,8 +87,13 @@ def remove_tracker():
 
 def print_log():
     try:
+        print("")
+        log = ""
+        with open("app.log.1", "r") as f:
+            log += f.read()
         with open("app.log", "r") as f:
-            print(f.read())
+            log += f.read()
+        console.log(log)
     except FileNotFoundError:
         print("No log file found!")
 
@@ -157,7 +168,18 @@ def main():
         else:
             print("Invalid command!")
 
+def get_logger():
+    logger = logging.getLogger('app')
+    handler = RotatingFileHandler("app.log", maxBytes=3*1024, backupCount=4)
+    formater = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formater)
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+
 if __name__ == '__main__':
+
+    get_logger()
+
     try:
         main()
     except KeyboardInterrupt:

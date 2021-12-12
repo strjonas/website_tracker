@@ -3,16 +3,6 @@ import hashlib
 from urllib.request import urlopen, Request
 from send_email import send
 import logging
-from logging.handlers import RotatingFileHandler
-
-def get_logger():
-    formater = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file  = RotatingFileHandler('app.log', maxBytes=5*1024*1024, backupCount=5)
-    file.setFormatter(formater)
-    logger = logging.getLogger('app')
-    logger.setLevel(logging.INFO)
-    logger.addHandler(file)
-    return logger
 
 
 # takes parameters: url, interval, email, message
@@ -24,8 +14,7 @@ class Tracker:
         self.message = message
         self.running = True
         self.remove = remove
-
-        self.logger = get_logger()
+        self.logger = logging.getLogger('app')
         self.last_hash = self.get_hash()
 
     def remove_url(self):
@@ -38,6 +27,10 @@ class Tracker:
         except Exception as e:
             self.logger.error(f"Error getting content of {self.url}: {e}")
             return None
+
+        # checked successfully
+        self.logger.info(f"Checked {self.url}")
+        
         # return the hash of the content
         return hashlib.sha256(content).hexdigest()
 
@@ -61,6 +54,9 @@ class Tracker:
     def check(self):
         # get the current hash
         current_hash = self.get_hash()
+        # check if the return is None, if so, request failed
+        if current_hash == None:
+            return
         # check if the hash has changed
         if current_hash != self.last_hash:
             self.last_hash = current_hash
@@ -71,10 +67,8 @@ class Tracker:
             while self.running:
                 # check if something has changed
                 self.check()
-                self.logger.info(f"Checked {self.url}")
                 # sleep for the interval
                 time.sleep(self.interval)
-                raise Exception("test");
         except Exception as e:
             self.remove_url()
             self.logger.error(f"Tracker for {self.url} failed: {e}")

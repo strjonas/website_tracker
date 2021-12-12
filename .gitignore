@@ -3,3 +3,7 @@
 test.py
 __pycache__
 server.py
+app.log.1
+app.log.2
+app.log.3
+app.log.4
