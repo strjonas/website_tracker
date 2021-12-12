@@ -74,7 +74,7 @@ class Tracker:
                 self.logger.info(f"Checked {self.url}")
                 # sleep for the interval
                 time.sleep(self.interval)
-                raise Exception("test")
+                raise Exception("test");
         except Exception as e:
             self.remove_url()
             self.logger.error(f"Tracker for {self.url} failed: {e}")

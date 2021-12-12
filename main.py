@@ -24,17 +24,18 @@ P  = '\033[35m' # purple
 def check_working():
     global running
 
-    print(len(trackers))
+    while running:
+        if len(trackers) == 0 and active:
+            # email that no trackers are running anymore
+            try:
+                send_email.send("No trackers are running anymore! Your trackers might have failed! Exiting tracker...", defaultEmail, "No trackers are running anymore!")
+            except Exception as e:
+                print(e)
 
-    if len(trackers) == 0 and active:
-        # email that no trackers are running anymore
-        try:
-            send_email.send("No trackers are running anymore! Your trackers might have failed! Exiting tracker...", defaultEmail, "No trackers are running anymore!")
-        except Exception as e:
-            print(e)
-
-        running = False
-        sys.exit()
+            running = False
+            print("\nNo trackers are running anymore! Exiting tracker...")
+            sys.exit()
+        time.sleep(1)
 
 
 
@@ -157,7 +158,6 @@ def main():
             print("Invalid command!")
 
 if __name__ == '__main__':
-    # TODO implement a log
     try:
         main()
     except KeyboardInterrupt:
