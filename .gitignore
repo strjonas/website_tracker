@@ -1,2 +1,5 @@
 .env
 *.log
+test.py
+__pycache__
+server.py
