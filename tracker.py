@@ -67,8 +67,11 @@ class Tracker:
             while self.running:
                 # check if something has changed
                 self.check()
-                # sleep for the interval
-                time.sleep(self.interval)
+                # sleep for the interval, in a range to exit properly
+                for _ in range(0, self.interval):
+                    if not self.running:
+                        break
+                    time.sleep(1)
         except Exception as e:
             self.remove_url()
             self.logger.error(f"Tracker for {self.url} failed: {e}")

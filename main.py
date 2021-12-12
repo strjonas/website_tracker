@@ -8,6 +8,7 @@ from rich.console import Console
 import logging
 from dataclasses import dataclass
 from prettytable import PrettyTable
+import json
 
 console = Console()
 
@@ -88,8 +89,13 @@ class Main:
 
         # add the tracker to the list of trackers and save in file
         self.trackers.append(tracker)
-        with open("trackers.txt", "a") as f:
-            f.write(f"{url};{interval};{email};{message}\n")
+
+        js = []
+        for tracker in self.trackers:
+            js.append({"url": tracker.url, "interval": tracker.interval, "email": tracker.email, "message": tracker.message})
+
+        with open("trackers.json", "w") as f:
+            json.dump(js, f)
     
     def remove_tracker(self):
 
@@ -117,9 +123,12 @@ class Main:
         self.trackers.remove(tracker)
 
         # writing the remaining trackers to the file
-        with open("trackers.txt", "w") as f:
-            for t in self.trackers:
-                f.write(f"{t.url};{t.interval};{t.email};{t.message}\n")
+        js = []
+        for tracker in self.trackers:
+            js.append({"url": tracker.url, "interval": tracker.interval, "email": tracker.email, "message": tracker.message})
+
+        with open("trackers.json", "w") as f:
+            json.dump(js, f)
 
         print(f"\nTracker for {tracker.url} stopped!")
     
@@ -175,24 +184,27 @@ class Main:
     def import_trackers(self):
         try:
             urls = ""
-            with open("trackers.txt", "r") as f:
-                for line in f:
-                    line = line.strip()
-                    line = line.split(";")
-                    url = line[0]
-                    urls += url + "\n"
-                    interval = int(line[1])
-                    email = line[2]
-                    message = line[3]
-                    tracker = Tracker(url, interval, email, message, self.remove_cb)
+
+            with open("trackers.json", "r") as f:
+                js = json.load(f)
+                for object in js:
+
+                    urls += object["url"] + "\n"
+
+                    tracker = Tracker(object["url"], object["interval"], object["email"], object["message"], self.remove_cb)
                     self.trackers.append(tracker)
+
                     t = Thread(target=tracker.run)
                     t.start()
                     self.threads.append(t)
+
             print(f"\nThe following websites have been importet are being tracked:\n\n{urls}")
 
         except FileNotFoundError:
-            print(f"\n{color.WARNING}No trackers file found!{color.W}")
+            print(f"\n{color.WARNING}No trackers file found!{color.W}\nCreating one...")
+            with open("trackers.json", "w") as f:
+                json.dump([], f)
+
     
     def print_list(self):
         # printing list of all trackers with prettytable
@@ -269,12 +281,17 @@ if __name__ == '__main__':
     
     get_logger()
 
-    try:
+    tracker = None;
+
+    try: 
 
         tracker = Main()
         tracker.run()
 
     except KeyboardInterrupt:
+
+        tracker.running = False
+
         print("")
         print("Exiting...")
         sys.exit()
